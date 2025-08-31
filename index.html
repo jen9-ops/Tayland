@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Счётчик с комментариями</title>
+    <link rel="stylesheet" href="https://jen9-ops.github.io/library/style.css">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --danger-color: #dc3545;
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-color: #333;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        html {
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 15px;
+        }
+
+        /* Контейнер приложения теперь гибкий и занимает почти всю высоту */
+        .calculator {
+            width: 100%;
+            max-width: 500px;
+            height: 90vh; /* Высота 90% от экрана */
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            display: flex;
+            flex-direction: column; /* Элементы идут друг под другом */
+        }
+
+        .total-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            word-break: break-all;
+            flex-shrink: 0; /* Не сжиматься */
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column; /* Поля друг под другом */
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        #numberInput, #commentInput {
+            flex-grow: 1;
+            padding: 8px 12px;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        #commentInput {
+            width: 100%; /* Комментарий на всю ширину */
+        }
+
+        #numberInput:focus, #commentInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+
+        button {
+            padding: 8px 12px; font-size: 0.9rem; border: none;
+            border-radius: 8px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; gap: 5px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        button:active { transform: scale(0.98); }
+        
+        #addButton { background-color: var(--primary-color); color: white; width: 100%; }
+        #addButton:hover { background-color: #0056b3; }
+
+        .actions { display: flex; gap: 10px; margin-bottom: 15px; flex-shrink: 0;}
+        #undoButton { background-color: #6c757d; color: white; flex-grow: 1;}
+        #undoButton:hover { background-color: #5a6268; }
+        #undoButton:disabled { background-color: #adb5bd; cursor: not-allowed; opacity: 0.7; }
+        #clearButton { background-color: var(--danger-color); color: white; flex-grow: 1;}
+        #clearButton:hover { background-color: #c82333; }
+
+        /* ИСТОРИЯ ТЕПЕРЬ ЗАНИМАЕТ ВСЕ СВОБОДНОЕ МЕСТО */
+        .history-log {
+            list-style: none;
+            padding: 0 10px 0 0;
+            flex-grow: 1; /* Растягивается на всю доступную высоту */
+            overflow-y: auto; /* Добавляет прокрутку, если нужно */
+            border-top: 1px solid var(--border-color);
+            min-height: 100px; /* Минимальная высота */
+        }
+        
+        .history-log li {
+            padding: 12px 5px; border-bottom: 1px solid #f1f1f1;
+            display: flex; flex-direction: column; /* Элементы внутри в столбик */
+            gap: 5px;
+        }
+        
+        .history-log .operation { display: flex; justify-content: space-between; font-weight: 500;}
+        .history-log .comment { font-style: italic; color: #555; font-size: 0.9rem; }
+        .history-log .date { font-size: 0.8rem; color: #888; text-align: right; }
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <div id="total" class="total-display">0</div>
+        
+        <div class="controls">
+            <div class="input-group">
+                 <input type="number" id="numberInput" placeholder="Введите число..." autofocus>
+            </div>
+            <input type="text" id="commentInput" placeholder="Комментарий (необязательно)...">
+            <button id="addButton">
+                <svg xmlns="http://www.w.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+                Добавить
+            </button>
+        </div>
+
+        <div class="actions">
+            <button id="undoButton">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 10.975V13.5a.5.5 0 0 1-1 0V11a.5.5 0 0 1 .5-.5h2.5a.5.5 0 0 1 0 1h-2v-.025a4 4 0 1 1 1.857-7.218.5.5 0 1 1 .707.707A3 3 0 1 0 8.5 11z"/></svg>
+                Назад
+            </button>
+            <button id="clearButton">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                Очистить
+            </button>
+        </div>
+
+        <ul id="history" class="history-log"></ul>
+    </div>
+
+    <script src="https://jen9-ops.github.io/library/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const numberInput = document.getElementById('numberInput');
+            const commentInput = document.getElementById('commentInput'); // Новое поле
+            const addButton = document.getElementById('addButton');
+            const undoButton = document.getElementById('undoButton');
+            const clearButton = document.getElementById('clearButton');
+            const totalDisplay = document.getElementById('total');
+            const historyLog = document.getElementById('history');
+
+            let total = 0;
+            let history = [];
+
+            const saveState = () => {
+                localStorage.setItem('calculatorTotal', total.toString());
+                localStorage.setItem('calculatorHistory', JSON.stringify(history));
+            };
+
+            const loadState = () => {
+                const savedTotal = localStorage.getItem('calculatorTotal');
+                const savedHistory = localStorage.getItem('calculatorHistory');
+                if (savedTotal !== null && savedHistory !== null) {
+                    total = parseFloat(savedTotal);
+                    history = JSON.parse(savedHistory);
+                }
+            };
+            
+            const render = () => {
+                totalDisplay.textContent = parseFloat(total.toFixed(4));
+                historyLog.innerHTML = '';
+
+                [...history].reverse().forEach(item => {
+                    const li = document.createElement('li');
+                    
+                    const operationDiv = document.createElement('div');
+                    operationDiv.className = 'operation';
+                    operationDiv.textContent = `${item.previousTotal} + ${item.addedValue} = ${item.newTotal}`;
+                    li.appendChild(operationDiv);
+
+                    // --- Отображение комментария ---
+                    if (item.comment) {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.className = 'comment';
+                        commentDiv.textContent = item.comment;
+                        li.appendChild(commentDiv);
+                    }
+
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'date';
+                    const date = new Date(item.timestamp);
+                    dateDiv.textContent = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + date.toLocaleTimeString('ru-RU');
+                    li.appendChild(dateDiv);
+                    
+                    historyLog.appendChild(li);
+                });
+
+                undoButton.disabled = history.length === 0;
+            };
+
+            const addNumber = () => {
+                const value = parseFloat(numberInput.value);
+                const comment = commentInput.value.trim(); // Получаем текст комментария
+
+                if (isNaN(value)) {
+                    numberInput.value = ''; return;
+                }
+
+                const prevTotal = parseFloat(total.toFixed(4));
+                const newTotal = parseFloat((total + value).toFixed(4));
+
+                history.push({
+                    previousTotal: prevTotal,
+                    addedValue: value,
+                    newTotal: newTotal,
+                    timestamp: new Date().toISOString(),
+                    comment: comment // Сохраняем комментарий
+                });
+                total = newTotal;
+                
+                numberInput.value = '';
+                commentInput.value = ''; // Очищаем поле комментария
+                numberInput.focus();
+                
+                saveState();
+                render();
+            };
+
+            const undo = () => {
+                if (history.length === 0) return;
+                history.pop();
+                total = history.length > 0 ? history[history.length - 1].newTotal : 0;
+                
+                saveState();
+                render();
+            };
+
+            const clearAll = () => {
+                if (confirm('Вы уверены, что хотите удалить всю историю и сбросить счетчик?')) {
+                    total = 0;
+                    history = [];
+                    saveState();
+                    render();
+                }
+            };
+            
+            addButton.addEventListener('click', addNumber);
+            undoButton.addEventListener('click', undo);
+            clearButton.addEventListener('click', clearAll);
+            
+            // Добавляем Enter для обоих полей ввода
+            numberInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') addNumber(); });
+            commentInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') addNumber(); });
+
+            loadState();
+            render();
+        });
+    </script>
+</body>
+</html>
