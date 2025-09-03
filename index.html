@@ -3,271 +3,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Счётчик с комментариями</title>
-    <link rel="stylesheet" href="https://jen9-ops.github.io/library/style.css">
+    <title>Счётчик</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="./icon/128.png"> 
     <style>
         :root {
-            --primary-color: #007bff;
-            --danger-color: #dc3545;
-            --light-gray: #f8f9fa;
-            --border-color: #dee2e6;
-            --text-color: #333;
-            --shadow-color: rgba(0, 0, 0, 0.1);
+            --primary-color: #007bff; --success-color: #28a745; --danger-color: #dc3545;
+            --info-color: #17a2b8; --secondary-color: #6c757d; --warning-color: #ffc107;
+            --light-gray: #f8f9fa; --border-color: #dee2e6; --text-color: #333;
+            --shadow-color: rgba(0, 0, 0, 0.08);
         }
-        
-        html {
-            height: 100%;
-        }
-
+        html, body { height: 100%; margin: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--light-gray);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding: 15px;
+            background-color: var(--light-gray); color: var(--text-color);
+            display: flex; justify-content: center; align-items: center; padding: 15px;
         }
-
-        /* Контейнер приложения теперь гибкий и занимает почти всю высоту */
         .calculator {
-            width: 100%;
-            max-width: 500px;
-            height: 90vh; /* Высота 90% от экрана */
-            background: #fff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px var(--shadow-color);
-            display: flex;
-            flex-direction: column; /* Элементы идут друг под другом */
+            width: 100%; max-width: 550px; height: 90vh; background: #fff;
+            padding: 25px; border-radius: 16px; box-shadow: 0 8px 30px var(--shadow-color);
+            display: flex; flex-direction: column; position: relative;
         }
-
-        .total-display {
-            font-size: 2.5rem;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-            word-break: break-all;
-            flex-shrink: 0; /* Не сжиматься */
-        }
-
-        .controls {
-            display: flex;
-            flex-direction: column; /* Поля друг под другом */
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-shrink: 0;
-        }
+        .app-header { display: flex; justify-content: space-between; position: absolute; top: 15px; left: 15px; right: 15px; }
+        .app-header button { background: none; padding: 5px; border-radius: 50%; width: 36px; height: 36px; border: none; cursor: pointer; }
+        .app-header button:hover { background-color: #f0f0f0; }
         
-        .input-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        #numberInput, #commentInput {
-            flex-grow: 1;
-            padding: 8px 12px;
-            font-size: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
+        .total-display { font-size: 2.5rem; font-weight: bold; text-align: center; margin-top: 30px; margin-bottom: 15px; color: var(--primary-color); word-break: break-all; flex-shrink: 0; }
+        .controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
+        #numberInput, #commentInput { font-family: inherit; font-size: 1rem; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; }
+        #commentInput { resize: none; overflow: hidden; line-height: 1.5; }
+        #numberInput:focus, #commentInput:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2); }
         
-        #commentInput {
-            width: 100%; /* Комментарий на всю ширину */
-        }
+        button, .button-label { padding: 8px 14px; font-size: 0.9rem; border: none; font-weight: 500; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s; }
+        button:hover, .button-label:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        button:active, .button-label:active { transform: scale(0.97); }
 
-        #numberInput:focus, #commentInput:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
-        }
-
-        button {
-            padding: 8px 12px; font-size: 0.9rem; border: none;
-            border-radius: 8px; cursor: pointer; display: flex;
-            align-items: center; justify-content: center; gap: 5px;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        button:active { transform: scale(0.98); }
+        .main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        #addButton { background-color: var(--primary-color); color: white; }
+        #subtractButton { background-color: var(--warning-color); color: #212529; }
+        #undoButton { background-color: var(--secondary-color); color: white; width: 100%; margin-top: 10px; }
         
-        #addButton { background-color: var(--primary-color); color: white; width: 100%; }
-        #addButton:hover { background-color: #0056b3; }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); width: 90%; max-width: 450px; position: relative; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 1.2rem; font-weight: 600; }
+        .close-button { background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: #aaa; }
+        .modal-body { display: flex; flex-direction: column; gap: 10px; }
+        .modal-body ul { padding-left: 20px; margin: 0; }
+        .modal-body li { margin-bottom: 8px; }
 
-        .actions { display: flex; gap: 10px; margin-bottom: 15px; flex-shrink: 0;}
-        #undoButton { background-color: #6c757d; color: white; flex-grow: 1;}
-        #undoButton:hover { background-color: #5a6268; }
-        #undoButton:disabled { background-color: #adb5bd; cursor: not-allowed; opacity: 0.7; }
-        #clearButton { background-color: var(--danger-color); color: white; flex-grow: 1;}
-        #clearButton:hover { background-color: #c82333; }
+        #importButton { display: none; }
+        #exportButton { background-color: var(--success-color); color: white; }
+        #importButton-label { background-color: var(--info-color); color: white; }
+        #installButton { background-color: #5a31f4; color: white; }
+        #clearButton { background-color: var(--danger-color); color: white; }
 
-        /* ИСТОРИЯ ТЕПЕРЬ ЗАНИМАЕТ ВСЕ СВОБОДНОЕ МЕСТО */
-        .history-log {
-            list-style: none;
-            padding: 0 10px 0 0;
-            flex-grow: 1; /* Растягивается на всю доступную высоту */
-            overflow-y: auto; /* Добавляет прокрутку, если нужно */
-            border-top: 1px solid var(--border-color);
-            min-height: 100px; /* Минимальная высота */
-        }
-        
-        .history-log li {
-            padding: 12px 5px; border-bottom: 1px solid #f1f1f1;
-            display: flex; flex-direction: column; /* Элементы внутри в столбик */
-            gap: 5px;
-        }
-        
-        .history-log .operation { display: flex; justify-content: space-between; font-weight: 500;}
-        .history-log .comment { font-style: italic; color: #555; font-size: 0.9rem; }
-        .history-log .date { font-size: 0.8rem; color: #888; text-align: right; }
+        .history-log { list-style: none; padding: 0; margin: 0; flex-grow: 1; overflow-y: auto; border-top: 1px solid var(--border-color); min-height: 100px; }
+        .history-log li { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; gap: 8px; transition: box-shadow 0.2s; }
+        .history-log li:hover { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08); }
+        .history-item-header { display: flex; justify-content: space-between; align-items: center; }
+        .history-item-header .operation { font-weight: 600; font-size: 1.1rem; color: #333; }
+        .history-item-actions button { background: none; border: none; cursor: pointer; padding: 4px; color: #aaa; transition: color 0.2s; }
+        .history-item-actions button:hover { color: #333; }
+        .comment-display { font-style: italic; color: #555; font-size: 0.95rem; white-space: pre-wrap; word-break: break-word; }
+        .history-item-footer { text-align: right; font-size: 0.8rem; color: #999; }
+        .edit-textarea { width: 100%; font-family: inherit; font-size: 0.95rem; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); resize: none; box-sizing: border-box; }
+        .edit-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .edit-actions button { padding: 5px 10px; font-size: 0.85rem; }
     </style>
 </head>
 <body>
-
     <div class="calculator">
+        <div class="app-header">
+            <button id="infoButton" title="Инструкция">ℹ️</button>
+            <button id="settingsButton" title="Настройки">⚙️</button>
+        </div>
         <div id="total" class="total-display">0</div>
         
         <div class="controls">
-            <div class="input-group">
-                 <input type="number" id="numberInput" placeholder="Введите число..." autofocus>
+            <input type="number" id="numberInput" placeholder="Введите число..." autofocus>
+            <textarea id="commentInput" placeholder="Комментарий..." rows="1"></textarea>
+            <div class="main-actions">
+                <button id="addButton">Добавить</button>
+                <button id="subtractButton">Отнять</button>
             </div>
-            <input type="text" id="commentInput" placeholder="Комментарий (необязательно)...">
-            <button id="addButton">
-                <svg xmlns="http://www.w.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
-                Добавить
-            </button>
+            <button id="undoButton">Назад</button>
         </div>
-
-        <div class="actions">
-            <button id="undoButton">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 10.975V13.5a.5.5 0 0 1-1 0V11a.5.5 0 0 1 .5-.5h2.5a.5.5 0 0 1 0 1h-2v-.025a4 4 0 1 1 1.857-7.218.5.5 0 1 1 .707.707A3 3 0 1 0 8.5 11z"/></svg>
-                Назад
-            </button>
-            <button id="clearButton">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
-                Очистить
-            </button>
-        </div>
-
         <ul id="history" class="history-log"></ul>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Настройки и данные</h2>
+                <button class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <button id="exportButton">Экспорт данных</button>
+                <label for="importButton" id="importButton-label" class="button-label">Импорт данных</label>
+                <input type="file" id="importButton" accept=".json">
+                <button id="installButton" style="display: none;">📲 Добавить на главный экран</button>
+                <button id="clearButton">Очистить всё</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Инструкция</h2>
+                <button class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Это простое приложение для ведения подсчётов с историей операций.</p>
+                <ul>
+                    <li><b>Добавить/Отнять:</b> Введите число и нажмите соответствующую кнопку.</li>
+                    <li><b>Комментарий:</b> Можно добавить многострочный комментарий к каждой операции.</li>
+                    <li><b>Редактирование:</b> Нажмите иконку ✏️ на любой записи, чтобы изменить её комментарий.</li>
+                    <li><b>Удаление:</b> Нажмите 🗑️ для удаления конкретной записи.</li>
+                    <li><b>Настройки (⚙️):</b> Здесь вы можете импортировать, экспортировать или полностью очистить данные.</li>
+                    <li><b>Установка:</b> В настройках также есть кнопка для добавления приложения на главный экран вашего устройства.</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <script src="https://jen9-ops.github.io/library/script.js"></script>
     <script>
+        // --- ЛОГИКА PWA (УСТАНОВКИ ПРИЛОЖЕНИЯ) ---
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js') }); }
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installButton.style.display = 'flex'; });
+        installButton.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installButton.style.display = 'none'; } });
+        window.addEventListener('appinstalled', () => { installButton.style.display = 'none'; });
+
+        // --- ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ ---
         document.addEventListener('DOMContentLoaded', () => {
             const numberInput = document.getElementById('numberInput');
-            const commentInput = document.getElementById('commentInput'); // Новое поле
+            const commentInput = document.getElementById('commentInput');
             const addButton = document.getElementById('addButton');
+            const subtractButton = document.getElementById('subtractButton');
             const undoButton = document.getElementById('undoButton');
-            const clearButton = document.getElementById('clearButton');
             const totalDisplay = document.getElementById('total');
             const historyLog = document.getElementById('history');
-
+            const settingsModal = document.getElementById('settingsModal');
+            const settingsButton = document.getElementById('settingsButton');
+            const infoModal = document.getElementById('infoModal');
+            const infoButton = document.getElementById('infoButton');
+            const exportButton = document.getElementById('exportButton');
+            const importButton = document.getElementById('importButton');
+            const clearButton = document.getElementById('clearButton');
             let total = 0;
             let history = [];
 
-            const saveState = () => {
-                localStorage.setItem('calculatorTotal', total.toString());
-                localStorage.setItem('calculatorHistory', JSON.stringify(history));
+            const setupModal = (modal, openBtn) => {
+                const closeBtn = modal.querySelector('.close-button');
+                const open = () => modal.classList.add('active');
+                const close = () => modal.classList.remove('active');
+                openBtn.addEventListener('click', open);
+                closeBtn.addEventListener('click', close);
+                modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
             };
+            setupModal(settingsModal, settingsButton);
+            setupModal(infoModal, infoButton);
 
-            const loadState = () => {
-                const savedTotal = localStorage.getItem('calculatorTotal');
-                const savedHistory = localStorage.getItem('calculatorHistory');
-                if (savedTotal !== null && savedHistory !== null) {
-                    total = parseFloat(savedTotal);
-                    history = JSON.parse(savedHistory);
-                }
-            };
+            const autoResizeTextarea = (textarea) => { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; };
+            const saveState = () => { try { localStorage.setItem('calculatorState', JSON.stringify({ total, history })); } catch (e) { console.error("Failed to save state:", e); } };
+            const loadState = () => { try { const state = JSON.parse(localStorage.getItem('calculatorState')); if (state) { total = state.total; history = state.history || []; } } catch (e) { console.error("Failed to load state:", e); } };
             
             const render = () => {
                 totalDisplay.textContent = parseFloat(total.toFixed(4));
                 historyLog.innerHTML = '';
-
-                [...history].reverse().forEach(item => {
+                [...history].reverse().forEach((item, index) => {
+                    const originalIndex = history.length - 1 - index;
+                    const operator = item.type === 'subtract' ? '−' : '+';
                     const li = document.createElement('li');
-                    
-                    const operationDiv = document.createElement('div');
-                    operationDiv.className = 'operation';
-                    operationDiv.textContent = `${item.previousTotal} + ${item.addedValue} = ${item.newTotal}`;
-                    li.appendChild(operationDiv);
-
-                    // --- Отображение комментария ---
-                    if (item.comment) {
-                        const commentDiv = document.createElement('div');
-                        commentDiv.className = 'comment';
-                        commentDiv.textContent = item.comment;
-                        li.appendChild(commentDiv);
-                    }
-
-                    const dateDiv = document.createElement('div');
-                    dateDiv.className = 'date';
-                    const date = new Date(item.timestamp);
-                    dateDiv.textContent = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + date.toLocaleTimeString('ru-RU');
-                    li.appendChild(dateDiv);
-                    
+                    li.innerHTML = `<div class="history-item-header"><span class="operation">${item.previousTotal} ${operator} ${item.value} = ${item.newTotal}</span><div class="history-item-actions"><button class="edit-btn" data-index="${originalIndex}">✏️</button><button class="delete-btn" data-index="${originalIndex}">🗑️</button></div></div><div class="comment-display">${item.comment || ''}</div><div class="history-item-footer">${new Date(item.timestamp).toLocaleString('ru-RU')}</div>`;
                     historyLog.appendChild(li);
                 });
-
                 undoButton.disabled = history.length === 0;
             };
 
-            const addNumber = () => {
-                const value = parseFloat(numberInput.value);
-                const comment = commentInput.value.trim(); // Получаем текст комментария
-
-                if (isNaN(value)) {
-                    numberInput.value = ''; return;
-                }
-
-                const prevTotal = parseFloat(total.toFixed(4));
-                const newTotal = parseFloat((total + value).toFixed(4));
-
-                history.push({
-                    previousTotal: prevTotal,
-                    addedValue: value,
-                    newTotal: newTotal,
-                    timestamp: new Date().toISOString(),
-                    comment: comment // Сохраняем комментарий
+            const recalculateTotal = () => {
+                let currentTotal = 0;
+                history.forEach(item => {
+                    item.previousTotal = parseFloat(currentTotal.toFixed(4));
+                    if (item.type === 'subtract') { currentTotal -= item.value; } else { currentTotal += item.value; }
+                    item.newTotal = parseFloat(currentTotal.toFixed(4));
                 });
+                total = currentTotal;
+            };
+
+            const addOperation = (type) => {
+                const value = parseFloat(numberInput.value);
+                if (isNaN(value)) return;
+                const newTotal = type === 'subtract' ? total - value : total + value;
+                history.push({ type: type, value: value, previousTotal: parseFloat(total.toFixed(4)), newTotal: parseFloat(newTotal.toFixed(4)), timestamp: new Date().toISOString(), comment: commentInput.value.trim() });
                 total = newTotal;
-                
-                numberInput.value = '';
-                commentInput.value = ''; // Очищаем поле комментария
+                numberInput.value = ''; commentInput.value = ''; autoResizeTextarea(commentInput);
                 numberInput.focus();
-                
-                saveState();
-                render();
+                saveState(); render();
             };
 
-            const undo = () => {
-                if (history.length === 0) return;
-                history.pop();
-                total = history.length > 0 ? history[history.length - 1].newTotal : 0;
-                
-                saveState();
-                render();
+            const undo = () => { if (history.length === 0) return; history.pop(); total = history.length > 0 ? history[history.length - 1].newTotal : 0; saveState(); render(); };
+            const clearAll = () => { if (confirm('Вы уверены, что хотите полностью очистить всю историю?')) { total = 0; history = []; saveState(); render(); settingsModal.classList.remove('active'); } };
+            const deleteEntry = (index) => { if (confirm('Вы уверены, что хотите удалить эту запись?')) { history.splice(index, 1); recalculateTotal(); saveState(); render(); } };
+            
+            const showEditUI = (index) => {
+                const item = history[index];
+                const listItem = historyLog.querySelector(`[data-index="${index}"]`).closest('li');
+                const commentDisplay = listItem.querySelector('.comment-display');
+                const editArea = document.createElement('textarea');
+                editArea.className = 'edit-textarea';
+                editArea.value = item.comment || '';
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = 'Сохранить';
+                saveBtn.style.backgroundColor = 'var(--success-color)';
+                saveBtn.style.color = 'white';
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = 'Отмена';
+                cancelBtn.style.backgroundColor = 'var(--secondary-color)';
+                cancelBtn.style.color = 'white';
+                const editActions = document.createElement('div');
+                editActions.className = 'edit-actions';
+                editActions.append(cancelBtn, saveBtn);
+                commentDisplay.innerHTML = '';
+                commentDisplay.append(editArea, editActions);
+                autoResizeTextarea(editArea);
+                editArea.addEventListener('input', () => autoResizeTextarea(editArea));
+                saveBtn.onclick = () => saveComment(index, editArea.value);
+                cancelBtn.onclick = () => render();
             };
 
-            const clearAll = () => {
-                if (confirm('Вы уверены, что хотите удалить всю историю и сбросить счетчик?')) {
-                    total = 0;
-                    history = [];
-                    saveState();
-                    render();
+            const saveComment = (index, newComment) => { history[index].comment = newComment.trim(); saveState(); render(); };
+            
+            const exportData = async () => {
+                const dataStr = JSON.stringify({ total, history }, null, 2);
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        const handle = await window.showSaveFilePicker({ suggestedName: 'calculator_data.json', types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }] });
+                        const writable = await handle.createWritable();
+                        await writable.write(dataStr);
+                        await writable.close();
+                    } catch (err) { console.log('Export cancelled.'); }
+                } else {
+                    const linkElement = document.createElement('a');
+                    linkElement.setAttribute('href', 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr));
+                    linkElement.setAttribute('download', 'calculator_data.json');
+                    linkElement.click();
                 }
             };
             
-            addButton.addEventListener('click', addNumber);
+            const importData = (event) => {
+                const fileReader = new FileReader();
+                fileReader.onload = (e) => {
+                    try {
+                        const newState = JSON.parse(e.target.result);
+                        if (newState && typeof newState.total === 'number' && Array.isArray(newState.history)) {
+                            if (confirm('Импортировать данные? Текущие данные будут перезаписаны.')) { total = newState.total; history = newState.history; saveState(); render(); settingsModal.classList.remove('active'); }
+                        } else { alert('Ошибка: Неверный формат файла.'); }
+                    } catch (error) { alert('Ошибка чтения файла.'); }
+                };
+                fileReader.readAsText(event.target.files[0]);
+                event.target.value = '';
+            };
+
+            addButton.addEventListener('click', () => addOperation('add'));
+            subtractButton.addEventListener('click', () => addOperation('subtract'));
             undoButton.addEventListener('click', undo);
             clearButton.addEventListener('click', clearAll);
+            exportButton.addEventListener('click', exportData);
+            importButton.addEventListener('change', importData);
+            commentInput.addEventListener('input', () => autoResizeTextarea(commentInput));
+            commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('addButton').click(); }});
+            historyLog.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                const index = parseInt(target.getAttribute('data-index'));
+                if (target.classList.contains('delete-btn')) deleteEntry(index);
+                if (target.classList.contains('edit-btn')) showEditUI(index);
+            });
             
-            // Добавляем Enter для обоих полей ввода
-            numberInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') addNumber(); });
-            commentInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') addNumber(); });
-
             loadState();
             render();
         });
